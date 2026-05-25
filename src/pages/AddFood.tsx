@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { analyzeFoodDescription, analyzeFoodImage } from '@/services/openrouter';
-import { Sparkles, Save, BookOpen, Utensils, Camera, X } from 'lucide-react';
+import { Sparkles, Save, BookOpen, Utensils, Camera, X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -275,17 +275,34 @@ export default function AddFood() {
               </button>
             </div>
           ) : (
-            <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-dashed border-white/25 hover:border-white/40 bg-white/5 hover:bg-white/10 text-xs font-semibold text-indigo-100 dark:text-slate-300 cursor-pointer transition-all duration-150 select-none tap-effect">
-              <Camera className="w-4 h-4 text-indigo-200" />
-              <span>Tomar foto o subir imagen</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="hidden"
-                disabled={analyzing}
-              />
-            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {/* Option: Camera (takes photo) */}
+              <label className="flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl border border-dashed border-white/25 hover:border-white/40 bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-indigo-100 dark:text-slate-300 cursor-pointer transition-all duration-150 select-none tap-effect text-center">
+                <Camera className="w-4 h-4 text-indigo-200" />
+                <span>Tomar Foto</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={analyzing}
+                />
+              </label>
+
+              {/* Option: Gallery (uploads from files/albums) */}
+              <label className="flex flex-col items-center justify-center gap-1.5 py-3.5 px-2 rounded-2xl border border-dashed border-white/25 hover:border-white/40 bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-indigo-100 dark:text-slate-300 cursor-pointer transition-all duration-150 select-none tap-effect text-center">
+                <Upload className="w-4 h-4 text-indigo-200" />
+                <span>Subir de Galería</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  disabled={analyzing}
+                />
+              </label>
+            </div>
           )}
         </div>
 
