@@ -88,6 +88,7 @@ export default function Progress() {
 
   // Parse weekly food deficit
   const currentWeight = user?.weight || 70;
+  const userGoal = user?.goal || 'maintain';
 
   // Sum calories of the last 7 days
   const d = new Date();
@@ -97,23 +98,54 @@ export default function Progress() {
     return `${temp.getFullYear()}-${String(temp.getMonth() + 1).padStart(2, '0')}-${String(temp.getDate()).padStart(2, '0')}`;
   });
 
-  const weeklyCalories = foodLog
-    .filter((entry) => last7DaysStrings.includes(entry.date))
-    .reduce((sum, item) => sum + item.calories, 0);
-
-  // Dynamic TDEE calculations for metabolic weight projection
+  // Calculate dynamic deficit/surplus only on days that actually have logs
   const tdee = calculateUserTdee(user);
-  const weeklyTdee = tdee * 7;
-  const weeklyBalance = weeklyCalories - weeklyTdee; // negative = deficit relative to maintenance, positive = surplus
+  let loggedDaysCount = 0;
+  let accumulatedDeficitOrSurplus = 0; // positive = deficit achieved (for fat loss) or surplus achieved (for muscle gain)
+
+  for (const dateStr of last7DaysStrings) {
+    const dayEntries = foodLog.filter((entry) => entry.date === dateStr);
+    const hasLogs = dayEntries.length > 0;
+    if (hasLogs) {
+      loggedDaysCount++;
+      const calories = dayEntries.reduce((sum, item) => sum + item.calories, 0);
+      if (userGoal === 'lose_fat') {
+        accumulatedDeficitOrSurplus += (tdee - calories);
+      } else if (userGoal === 'gain_muscle') {
+        accumulatedDeficitOrSurplus += (calories - tdee);
+      } else {
+        accumulatedDeficitOrSurplus += (calories - tdee);
+      }
+    }
+  }
+
+  // Real weekly balance (negative = deficit relative to maintenance, positive = surplus)
+  let weeklyBalance = 0;
+  if (loggedDaysCount > 0) {
+    if (userGoal === 'lose_fat') {
+      weeklyBalance = -accumulatedDeficitOrSurplus;
+    } else {
+      weeklyBalance = accumulatedDeficitOrSurplus;
+    }
+  }
 
   // 7700 kcal deficit = 1kg of fat lost/gained
   const fatChangeGrams = Math.round(-weeklyBalance / 7.7);
 
-  // Projections
-  const weeklyFatChangeKg = fatChangeGrams / 1000;
-  const monthlyFatChangeKg = parseFloat((weeklyFatChangeKg * 4.33).toFixed(2));
+  // Projections: estimate monthly projection assuming the logged days behaviour continues
+  const averageDailyDeficit = loggedDaysCount > 0 ? (accumulatedDeficitOrSurplus / loggedDaysCount) : 0;
   
-  // Projected weight in 30 days based on TDEE balance
+  // Projected fat change in 30 days (kg)
+  let monthlyFatChangeKg = 0;
+  if (userGoal === 'lose_fat') {
+    monthlyFatChangeKg = parseFloat(((averageDailyDeficit * 30) / 7700).toFixed(2));
+  } else if (userGoal === 'gain_muscle') {
+    monthlyFatChangeKg = -parseFloat(((averageDailyDeficit * 30) / 7700).toFixed(2)); // negative means gain
+  } else {
+    monthlyFatChangeKg = parseFloat(((averageDailyDeficit * 30) / 7700).toFixed(2));
+  }
+
+  // Projected weight in 30 days
   const projectedWeight30Days = parseFloat((currentWeight - monthlyFatChangeKg).toFixed(1));
 
   // Regression trend line calculation
