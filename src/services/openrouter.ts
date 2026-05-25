@@ -17,16 +17,19 @@ export async function analyzeFoodDescription(description: string): Promise<AIAna
     throw new Error('La API Key de OpenRouter no está configurada en las variables de entorno.');
   }
 
-  const prompt = `Analiza la siguiente descripción de comida en español y calcula los macronutrientes estimados:
+  const prompt = `Analiza la siguiente descripción de comida en español y estima los macronutrientes correspondientes:
 Descripción: "${description}"
 
-Debes devolver obligatoriamente un objeto JSON con el siguiente formato, sin texto introductorio ni explicaciones adicionales, simplemente el JSON crudo:
+Debes responder ÚNICAMENTE con un objeto JSON válido.
+IMPORTANTE: No traduzcas las llaves del JSON. Deben ser exactamente "name", "calories", "protein", "carbs" y "fat".
+
+Ejemplo de respuesta esperada:
 {
-  "name": "Nombre de la comida/alimento resumido en español",
-  "calories": calorías totales en kcal (número entero),
-  "protein": gramos de proteína (número decimal o entero),
-  "carbs": gramos de carbohidratos (número decimal o entero),
-  "fat": gramos de grasa (número decimal o entero)
+  "name": "2 huevos fritos",
+  "calories": 180,
+  "protein": 13,
+  "carbs": 1,
+  "fat": 14
 }`;
 
   const response = await fetch(OPENROUTER_URL, {
@@ -66,11 +69,11 @@ Debes devolver obligatoriamente un objeto JSON con el siguiente formato, sin tex
   try {
     const result = JSON.parse(cleanJson);
     return {
-      name: String(result.name || description),
-      calories: Math.round(Number(result.calories || 0)),
-      protein: Math.max(0, parseFloat(String(result.protein || 0))),
-      carbs: Math.max(0, parseFloat(String(result.carbs || 0))),
-      fat: Math.max(0, parseFloat(String(result.fat || 0))),
+      name: String(result.name ?? result.nombre ?? description),
+      calories: Math.round(Number(result.calories ?? result.calorias ?? result.calorías ?? 0)),
+      protein: Math.max(0, parseFloat(String(result.protein ?? result.proteina ?? result.proteinas ?? result.proteínas ?? 0))),
+      carbs: Math.max(0, parseFloat(String(result.carbs ?? result.carbohidratos ?? result.hidratos ?? 0))),
+      fat: Math.max(0, parseFloat(String(result.fat ?? result.grasa ?? result.grasas ?? 0))),
     };
   } catch (e) {
     console.error('Error parsing AI response:', textContent, e);
