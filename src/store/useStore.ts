@@ -105,6 +105,11 @@ export const useStore = create<AppState>()(
               if (!profile.photoURL && photoURL) profile.photoURL = photoURL;
             }
 
+            // Enforce that the profile contains the correct UID
+            if (profile) {
+              profile.uid = uid;
+            }
+
             // Set user profile in state BEFORE fetching subcollections to avoid blank screens
             set({ user: profile });
 

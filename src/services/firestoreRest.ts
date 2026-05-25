@@ -169,7 +169,9 @@ export const firestoreRest = {
   getUserProfile: async (uid: string, token: string): Promise<UserProfile | null> => {
     const data = await apiRequest(`users/${uid}`, 'GET', token);
     if (!data) return null;
-    return fromFirestoreFields(data.fields) as UserProfile;
+    const profile = fromFirestoreFields(data.fields) as UserProfile;
+    profile.uid = uid; // Enforce uid from the document path
+    return profile;
   },
 
   // Save/Update user profile (upsert)
