@@ -27,6 +27,32 @@ export default function SettingsPage() {
 
   const [saving, setSaving] = useState(false);
 
+  // Helper to compute TDEE dynamically based on NEAT + EAT inputs
+  const getEstimatedTdee = () => {
+    const baseBMR = 10 * weight + 6.25 * height - 5 * age;
+    const bmr = sex === 'male' ? baseBMR + 5 : baseBMR - 161;
+
+    const neatBases: Record<string, number> = {
+      sedentary: 1.15,
+      light: 1.25,
+      active: 1.35,
+      very_active: 1.50,
+    };
+    const baseMultiplier = neatBases[neatType] || 1.15;
+
+    const intensityFactors: Record<string, number> = {
+      light: 0.025,
+      moderate: 0.05,
+      intense: 0.075,
+    };
+    const intensityFactor = intensityFactors[workoutIntensity] || 0.05;
+
+    const calculatedMultiplier = baseMultiplier + (workoutFrequency * intensityFactor);
+    return Math.round(bmr * calculatedMultiplier);
+  };
+
+  const tdee = getEstimatedTdee();
+
   // Keep state synced with user profile loaded later
   useEffect(() => {
     if (user) {
@@ -372,7 +398,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                Objetivo Calórico (kcal)
+                Objetivo de Consumo Diario (kcal)
               </label>
               <input
                 type="number"
@@ -381,6 +407,22 @@ export default function SettingsPage() {
                 onChange={(e) => setCalorieGoal(Math.max(1, parseInt(e.target.value, 10)))}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-white font-semibold"
               />
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 bg-slate-50/50 dark:bg-slate-950/30 p-3.5 rounded-2xl border border-slate-100/50 dark:border-slate-800/40 flex flex-col gap-1 leading-relaxed">
+                <span className="font-bold text-slate-700 dark:text-slate-200">💡 ¿Qué significa esto?</span>
+                <span>Es la cantidad de calorías que debes <strong>comer</strong> diariamente para lograr tu meta.</span>
+                <span className="mt-1 font-semibold border-t border-slate-100 dark:border-slate-850/60 pt-1.5">
+                  • Tu gasto diario estimado (mantenimiento): <strong className="text-slate-800 dark:text-white">{tdee} kcal</strong>
+                </span>
+                <span>
+                  {goal === 'lose_fat' ? (
+                    <span>• Para <strong>perder grasa</strong> (Déficit): debes consumir <strong className="text-emerald-600 dark:text-emerald-400">{tdee - 500} kcal</strong> (-500 kcal)</span>
+                  ) : goal === 'gain_muscle' ? (
+                    <span>• Para <strong>ganar músculo</strong> (Superávit): debes consumir <strong className="text-primary-500 dark:text-primary-400">{tdee + 300} kcal</strong> (+300 kcal)</span>
+                  ) : (
+                    <span>• Para <strong>mantener peso</strong> (Mantenimiento): debes consumir <strong className="text-slate-800 dark:text-white">{tdee} kcal</strong></span>
+                  )}
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
