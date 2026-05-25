@@ -19,6 +19,19 @@ export default function SettingsPage() {
   const [workoutFrequency, setWorkoutFrequency] = useState<number>(user?.workoutFrequency ?? 3);
   const [workoutIntensity, setWorkoutIntensity] = useState<'light' | 'moderate' | 'intense'>(user?.workoutIntensity || 'moderate');
 
+  // Debug Panel States
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  useEffect(() => {
+    const handleLogAdded = () => {
+      setLogs([...((window as any).__caloTrackerLogs || [])]);
+    };
+    handleLogAdded();
+    window.addEventListener('calotracker-log-added', handleLogAdded);
+    return () => window.removeEventListener('calotracker-log-added', handleLogAdded);
+  }, []);
+
   // Nutritional goals state
   const [calorieGoal, setCalorieGoal] = useState(user?.calorieGoal || 2000);
   const [proteinGoal, setProteinGoal] = useState(user?.proteinGoal || 150);
@@ -494,6 +507,55 @@ export default function SettingsPage() {
         <LogOut className="w-4 h-4" />
         <span>Cerrar Sesión</span>
       </button>
+
+      {/* Panel de Diagnóstico */}
+      <div className="mt-4 bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-4 rounded-3xl flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setShowDiagnostics(!showDiagnostics)}
+          className="flex justify-between items-center text-xs font-bold text-slate-500 uppercase tracking-wider"
+        >
+          <span>🔧 Panel de Diagnóstico (Debug)</span>
+          <span className="text-[10px] text-primary-500 font-bold">{showDiagnostics ? 'Ocultar' : 'Mostrar'}</span>
+        </button>
+        
+        {showDiagnostics && (
+          <div className="flex flex-col gap-2 mt-1">
+            <div className="flex justify-between items-center text-[10px] text-slate-450 dark:text-slate-500 font-semibold px-0.5">
+              <span>Últimos eventos de red (Firestore REST):</span>
+              <button
+                type="button"
+                onClick={() => {
+                  (window as any).__caloTrackerLogs = [];
+                  setLogs([]);
+                }}
+                className="text-primary-500 hover:text-primary-600 font-bold"
+              >
+                Limpiar
+              </button>
+            </div>
+            
+            <div className="w-full max-h-52 overflow-y-auto bg-slate-950 text-slate-200 p-3 rounded-2xl font-mono text-[9px] flex flex-col gap-1.5 border border-slate-900 leading-normal">
+              {logs.length === 0 ? (
+                <span className="text-slate-500 italic">No hay logs registrados todavía.</span>
+              ) : (
+                logs.map((log, index) => {
+                  let color = 'text-slate-350';
+                  if (log.includes('ERR') || log.includes('EXCEPTION')) color = 'text-rose-400 font-bold';
+                  else if (log.includes('CALL')) color = 'text-indigo-300';
+                  else if (log.includes('Status 200') || log.includes('Status 201') || log.includes('Status 204')) color = 'text-emerald-400 font-bold';
+                  
+                  return (
+                    <span key={index} className={`break-all ${color}`}>
+                      {log}
+                    </span>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
     </div>
   );

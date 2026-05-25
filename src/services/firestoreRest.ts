@@ -83,6 +83,21 @@ export function fromFirestoreFields(fields: Record<string, any>): Record<string,
   return obj;
 }
 
+export function logMessage(msg: string) {
+  console.log(msg);
+  if (typeof window !== 'undefined') {
+    const win = window as any;
+    if (!win.__caloTrackerLogs) {
+      win.__caloTrackerLogs = [];
+    }
+    win.__caloTrackerLogs.unshift(`[${new Date().toLocaleTimeString()}] ${msg}`);
+    if (win.__caloTrackerLogs.length > 50) {
+      win.__caloTrackerLogs.pop();
+    }
+    win.dispatchEvent(new CustomEvent('calotracker-log-added'));
+  }
+}
+
 export function getDocId(path: string): string {
   const parts = path.split('/');
   return parts[parts.length - 1];
@@ -118,26 +133,34 @@ async function apiRequest(
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  logMessage(`API CALL: ${method} ${path}`);
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-  if (!response.ok) {
-    // If it's a 404 for a GET request, we return null instead of throwing, which allows conditional creation
-    if (response.status === 404 && method === 'GET') {
-      return null;
+    logMessage(`API RESP: ${method} ${path} -> Status ${response.status}`);
+
+    if (!response.ok) {
+      if (response.status === 404 && method === 'GET') {
+        return null;
+      }
+      const errorText = await response.text();
+      logMessage(`API ERR: ${method} ${path} -> ${response.status}: ${errorText}`);
+      throw new Error(`Firestore REST API Error (${response.status}): ${errorText}`);
     }
-    const errorText = await response.text();
-    throw new Error(`Firestore REST API Error (${response.status}): ${errorText}`);
-  }
 
-  if (method === 'DELETE') {
-    return true;
-  }
+    if (method === 'DELETE') {
+      return true;
+    }
 
-  return response.json();
+    return response.json();
+  } catch (err: any) {
+    logMessage(`API EXCEPTION: ${method} ${path} -> ${err.message}`);
+    throw err;
+  }
 }
 
 // Document Operations
