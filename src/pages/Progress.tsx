@@ -1,6 +1,6 @@
 // Progress Page Component
 import { useState } from 'react';
-import { useStore } from '@/store/useStore';
+import { useStore, calculateUserTdee } from '@/store/useStore';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Scale, TrendingDown, Target, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -87,7 +87,6 @@ export default function Progress() {
   const [submitting, setSubmitting] = useState(false);
 
   // Parse weekly food deficit
-  const calorieGoal = user?.calorieGoal || 2000;
   const currentWeight = user?.weight || 70;
 
   // Sum calories of the last 7 days
@@ -102,19 +101,19 @@ export default function Progress() {
     .filter((entry) => last7DaysStrings.includes(entry.date))
     .reduce((sum, item) => sum + item.calories, 0);
 
-  // Net weekly balance (actual intake - target budget for 7 days)
-  const weeklyTarget = calorieGoal * 7;
-  const weeklyBalance = weeklyCalories - weeklyTarget; // negative = deficit, positive = surplus
+  // Dynamic TDEE calculations for metabolic weight projection
+  const tdee = calculateUserTdee(user);
+  const weeklyTdee = tdee * 7;
+  const weeklyBalance = weeklyCalories - weeklyTdee; // negative = deficit relative to maintenance, positive = surplus
 
-  // 7700 kcal deficit = 1kg of fat lost
-  // fatChange = -balance / 7.7
+  // 7700 kcal deficit = 1kg of fat lost/gained
   const fatChangeGrams = Math.round(-weeklyBalance / 7.7);
 
   // Projections
   const weeklyFatChangeKg = fatChangeGrams / 1000;
   const monthlyFatChangeKg = parseFloat((weeklyFatChangeKg * 4.33).toFixed(2));
   
-  // Projected weight in 30 days based on dietary balance
+  // Projected weight in 30 days based on TDEE balance
   const projectedWeight30Days = parseFloat((currentWeight - monthlyFatChangeKg).toFixed(1));
 
   // Regression trend line calculation

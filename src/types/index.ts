@@ -6,6 +6,7 @@ export interface UserProfile {
   displayName: string;
   photoURL: string;
   calorieGoal: number;
+  sex?: 'male' | 'female';
   proteinGoal: number; // grams
   carbsGoal: number; // grams
   fatGoal: number; // grams

@@ -72,6 +72,7 @@ export default function SettingsPage() {
       setAge(user.age);
       setHeight(user.height);
       setWeight(user.weight);
+      setSex(user.sex || 'male');
       setGoal(user.goal);
       setCalorieGoal(user.calorieGoal);
       setProteinGoal(user.proteinGoal);
@@ -166,6 +167,7 @@ export default function SettingsPage() {
         age,
         height,
         weight,
+        sex,
         activityLevel: computedLevel,
         goal: goal as any,
         calorieGoal,

@@ -1,5 +1,5 @@
 // Weekly Progress Page Component
-import { useStore } from '@/store/useStore';
+import { useStore, calculateUserTdee } from '@/store/useStore';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 import { Award, Flame, TrendingDown, Info } from 'lucide-react';
 
@@ -56,15 +56,19 @@ export default function Weekly() {
   const averageCalories = Math.round(totalCalories / 7);
   const daysOnGoal = daysData.filter((d) => d.status === 'on_track').length;
   
-  // Weekly net balance: actual calories consumed vs target goals for 7 days
-  const targetTotal = calorieGoal * 7;
-  const balance = totalCalories - targetTotal;
+  // Weekly net balance based on actual maintenance TDEE
+  const tdee = calculateUserTdee(user);
+  const weeklyTdee = tdee * 7;
+  const realWeeklyBalance = totalCalories - weeklyTdee;
   
-  // Determine if it's favorable based on the user's goal
+  // Calculate fat change (7700 kcal = 1kg fat)
+  const fatChangeGrams = Math.round(-realWeeklyBalance / 7.7);
+  
+  // Determine if it's favorable based on the user's goal (relative to maintenance TDEE)
   const isFavorable = 
-    (userGoal === 'lose_fat' && balance <= 0) || 
-    (userGoal === 'gain_muscle' && balance >= 0) ||
-    (userGoal === 'maintain' && Math.abs(balance) <= 1000);
+    (userGoal === 'lose_fat' && realWeeklyBalance <= 0) || 
+    (userGoal === 'gain_muscle' && realWeeklyBalance >= 0) ||
+    (userGoal === 'maintain' && Math.abs(realWeeklyBalance) <= 1000);
 
   return (
     <div className="flex-1 flex flex-col gap-6 p-5 pb-24 animate-fade-in text-slate-800 dark:text-slate-100">
@@ -173,30 +177,55 @@ export default function Weekly() {
       </div>
 
       {/* Weekly Deficit/Surplus Card */}
-      <div className={`p-5 rounded-3xl border flex gap-4 items-start ${
+      <div className={`p-5 rounded-3xl border flex flex-col gap-4.5 ${
         isFavorable 
-          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100/60 dark:border-emerald-900/40 text-emerald-800 dark:text-emerald-300'
-          : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-100/60 dark:border-rose-900/40 text-rose-800 dark:text-rose-300'
+          ? 'bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-100/60 dark:border-emerald-900/30 text-emerald-900 dark:text-emerald-300'
+          : 'bg-rose-50/30 dark:bg-rose-950/10 border-rose-100/60 dark:border-rose-900/30 text-rose-900 dark:text-rose-300'
       }`}>
-        <Info className="w-5 h-5 shrink-0 mt-0.5" />
-        <div className="flex flex-col gap-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider">
-            Balance Calórico Semanal
-          </h3>
-          <p className="text-sm font-semibold mt-1">
-            {balance < 0 ? (
-              <span>Registraste un **déficit** neto de <span className="font-extrabold">{Math.abs(balance)} kcal</span> esta semana.</span>
-            ) : (
-              <span>Registraste un **superávit** neto de <span className="font-extrabold">{balance} kcal</span> esta semana.</span>
-            )}
-          </p>
-          <span className="text-[10px] opacity-80 mt-1">
-            {userGoal === 'lose_fat'
-              ? 'Un balance negativo es favorable para perder grasa corporal.'
-              : userGoal === 'gain_muscle'
-              ? 'Un balance positivo es necesario para desarrollar tejido muscular.'
-              : 'Mantente cerca de un balance neutro (+/- 700 kcal) para sostener tu peso.'}
-          </span>
+        <div className="flex gap-3.5 items-start">
+          <Info className={`w-5 h-5 shrink-0 mt-0.5 ${isFavorable ? 'text-emerald-500' : 'text-rose-500'}`} />
+          <div className="flex flex-col gap-1 w-full">
+            <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Balance Calórico Real Semanal
+            </h3>
+            
+            <div className="flex justify-between items-baseline mt-1 border-b border-slate-100 dark:border-slate-800/50 pb-2">
+              <span className="text-xl font-extrabold">
+                {realWeeklyBalance < 0 ? (
+                  <span>-{Math.abs(realWeeklyBalance)} kcal</span>
+                ) : (
+                  <span>+{realWeeklyBalance} kcal</span>
+                )}
+              </span>
+              <span className="text-xs font-bold">
+                {fatChangeGrams >= 0 ? (
+                  <span>~{fatChangeGrams}g grasa perdida</span>
+                ) : (
+                  <span>~{Math.abs(fatChangeGrams)}g grasa ganada</span>
+                )}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3.5 mt-2.5 text-xs">
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Gasto Estimado (TDEE x 7)</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200">{weeklyTdee} kcal</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 dark:text-slate-500">Consumo Real (Comida)</span>
+                <span className="font-bold text-slate-700 dark:text-slate-200">{totalCalories} kcal</span>
+              </div>
+              <div className="flex flex-col col-span-2 border-t border-slate-100 dark:border-slate-800/40 pt-2 text-[11px] leading-relaxed text-slate-500 dark:text-slate-450">
+                {userGoal === 'lose_fat' ? (
+                  <span>• Objetivo semanal planificado: déficit de <strong className="text-emerald-600 dark:text-emerald-400">{Math.max(0, (tdee - calorieGoal) * 7)} kcal</strong> (~{Math.round(Math.max(0, (tdee - calorieGoal) * 7) / 7.7)}g). Tu comportamiento real te sitúa en un déficit de <strong className="text-emerald-600 dark:text-emerald-400">{realWeeklyBalance < 0 ? Math.abs(realWeeklyBalance) : 0} kcal</strong>.</span>
+                ) : userGoal === 'gain_muscle' ? (
+                  <span>• Objetivo semanal planificado: superávit de <strong className="text-primary-500">{Math.max(0, (calorieGoal - tdee) * 7)} kcal</strong>. Tu comportamiento real te sitúa en un {realWeeklyBalance >= 0 ? 'superávit' : 'déficit'} de <strong>{Math.abs(realWeeklyBalance)} kcal</strong>.</span>
+                ) : (
+                  <span>• Objetivo semanal planificado: mantenimiento (+/- 700 kcal). Tu comportamiento real es de <strong>{realWeeklyBalance < 0 ? `-${Math.abs(realWeeklyBalance)}` : `+${realWeeklyBalance}`} kcal</strong>.</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

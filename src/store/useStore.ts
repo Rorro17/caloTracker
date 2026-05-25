@@ -5,6 +5,40 @@ import type { UserProfile, FoodEntry, CustomFood, WeightEntry } from '@/types';
 import { firestoreRest, generateId } from '@/services/firestoreRest';
 import toast from 'react-hot-toast';
 
+// Helper to compute TDEE dynamically based on Mifflin-St Jeor and NEAT/EAT multipliers
+export function calculateUserTdee(user: UserProfile | null): number {
+  if (!user) return 2000;
+
+  const weight = user.weight || 70;
+  const height = user.height || 175;
+  const age = user.age || 30;
+  const sex = user.sex || 'male';
+  const neatType = user.neatType || 'sedentary';
+  const workoutFrequency = user.workoutFrequency ?? 3;
+  const workoutIntensity = user.workoutIntensity || 'moderate';
+
+  const baseBMR = 10 * weight + 6.25 * height - 5 * age;
+  const bmr = sex === 'female' ? baseBMR - 161 : baseBMR + 5;
+
+  const neatBases: Record<string, number> = {
+    sedentary: 1.15,
+    light: 1.25,
+    active: 1.35,
+    very_active: 1.50,
+  };
+  const baseMultiplier = neatBases[neatType] || 1.15;
+
+  const intensityFactors: Record<string, number> = {
+    light: 0.025,
+    moderate: 0.05,
+    intense: 0.075,
+  };
+  const intensityFactor = intensityFactors[workoutIntensity] || 0.05;
+
+  const calculatedMultiplier = baseMultiplier + (workoutFrequency * intensityFactor);
+  return Math.round(bmr * calculatedMultiplier);
+}
+
 interface AppState {
   user: UserProfile | null;
   token: string | null;
