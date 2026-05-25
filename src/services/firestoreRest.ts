@@ -95,14 +95,23 @@ async function apiRequest(
   token: string,
   body?: any
 ): Promise<any> {
-  const url = `${BASE_URL}/${path}`;
+  let url = `${BASE_URL}/${path}`;
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${token}`,
   };
 
-  // For PATCH, Firestore REST API requires document 'name' in the body matching the path
-  if (method === 'PATCH' && body && !body.name) {
-    body.name = `projects/${PROJECT_ID}/databases/(default)/documents/${path}`;
+  // For PATCH, we must supply the document name in the body and set the updateMask query parameters for partial edits
+  if (method === 'PATCH' && body) {
+    if (!body.name) {
+      body.name = `projects/${PROJECT_ID}/databases/(default)/documents/${path}`;
+    }
+    if (body.fields) {
+      const keys = Object.keys(body.fields);
+      if (keys.length > 0) {
+        const queryParams = keys.map(key => `updateMask.fieldPaths=${key}`).join('&');
+        url += `?${queryParams}`;
+      }
+    }
   }
 
   if (body) {
