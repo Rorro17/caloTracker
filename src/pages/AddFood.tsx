@@ -1,8 +1,8 @@
 // Add Food Page Component
 import { useState } from 'react';
 import { useStore } from '@/store/useStore';
-import { analyzeFoodDescription } from '@/services/openrouter';
-import { Sparkles, Save, BookOpen, Utensils } from 'lucide-react';
+import { analyzeFoodDescription, analyzeFoodImage } from '@/services/openrouter';
+import { Sparkles, Save, BookOpen, Utensils, Camera, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,8 +26,9 @@ export default function AddFood() {
   const navigate = useNavigate();
   const { addFoodEntry, customFoods, addCustomFood } = useStore();
 
-  // AI analysis state
+  // AI analysis text & photo states
   const [aiText, setAiText] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
 
   // Form states
@@ -43,18 +44,86 @@ export default function AddFood() {
   const [showCustomDrawer, setShowCustomDrawer] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Handle AI analysis
+  // Compress and resize image using HTML5 Canvas to avoid high network payload sizes
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast.loading('Procesando foto...');
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // Create new browser image (use window.Image to avoid conflict with React component naming if any)
+      const img = new window.Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        // Resize proportional calculation
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert canvas image to base64 JPEG format with 80% compression quality
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+        setImagePreview(compressedBase64);
+        toast.success('¡Foto cargada y optimizada!', { id: toastId });
+      };
+      img.onerror = () => {
+        toast.error('Error al procesar la imagen.', { id: toastId });
+      };
+    };
+    reader.onerror = () => {
+      toast.error('Error al leer el archivo.', { id: toastId });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Helper to clear the loaded food photo
+  const clearPhoto = () => {
+    setImagePreview(null);
+  };
+
+  // Handle AI analysis (multimodal photo or description text)
   const handleAIAnalysis = async () => {
-    if (!aiText.trim()) {
-      toast.error('Por favor escribe qué comiste para que la IA lo analice.');
+    if (!imagePreview && !aiText.trim()) {
+      toast.error('Por favor escribe qué comiste o sube una foto para analizar.');
       return;
     }
 
     setAnalyzing(true);
-    const toastId = toast.loading('Gemini está analizando tu comida...');
+    const toastId = toast.loading(
+      imagePreview 
+        ? 'Gemini está analizando la foto de tu comida...' 
+        : 'Gemini está analizando tu descripción...'
+    );
 
     try {
-      const result = await analyzeFoodDescription(aiText);
+      let result;
+      if (imagePreview) {
+        // Use the multimodal API method with the base64 data and context text
+        result = await analyzeFoodImage(imagePreview, aiText);
+      } else {
+        // Fall back to the text-only estimation description API
+        result = await analyzeFoodDescription(aiText);
+      }
+
       setName(result.name);
       setCalories(result.calories);
       setProtein(result.protein);
@@ -176,11 +245,50 @@ export default function AddFood() {
         <textarea
           value={aiText}
           onChange={(e) => setAiText(e.target.value)}
-          placeholder="Ej: 2 huevos revueltos con una rebanada de pan integral tostado y una taza de café negro con azúcar."
+          placeholder={
+            imagePreview 
+              ? "Opcional: Agrega contexto sobre la foto (ej: pechuga cocida a la plancha sin aceite, aderezo light)..." 
+              : "Ej: 2 huevos revueltos con una rebanada de pan integral tostado y una taza de café negro con azúcar..."
+          }
           rows={3}
           disabled={analyzing}
           className="w-full p-3 bg-white/15 dark:bg-slate-950/60 border border-white/10 dark:border-slate-800 rounded-2xl placeholder-white/55 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-white/20 dark:focus:ring-indigo-500 text-white resize-none"
         />
+
+        {/* Camera / Photo uploader with preview */}
+        <div className="flex flex-col gap-2">
+          {imagePreview ? (
+            <div className="relative w-full aspect-video max-h-40 rounded-2xl overflow-hidden border border-white/20 bg-slate-950/40">
+              <img
+                src={imagePreview}
+                alt="Foto de la comida"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={clearPhoto}
+                disabled={analyzing}
+                className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-slate-950/80 hover:bg-slate-950 text-white border border-white/10 transition-all tap-effect"
+                title="Quitar foto"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <label className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border border-dashed border-white/25 hover:border-white/40 bg-white/5 hover:bg-white/10 text-xs font-semibold text-indigo-100 dark:text-slate-300 cursor-pointer transition-all duration-150 select-none tap-effect">
+              <Camera className="w-4 h-4 text-indigo-200" />
+              <span>Tomar foto o subir imagen</span>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageChange}
+                className="hidden"
+                disabled={analyzing}
+              />
+            </label>
+          )}
+        </div>
 
         <button
           onClick={handleAIAnalysis}
@@ -196,7 +304,7 @@ export default function AddFood() {
           ) : (
             <>
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Analizar Comida con IA</span>
+              <span>{imagePreview ? 'Analizar Foto con IA' : 'Analizar Descripción con IA'}</span>
             </>
           )}
         </button>
