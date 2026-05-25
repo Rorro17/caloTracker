@@ -100,6 +100,11 @@ async function apiRequest(
     'Authorization': `Bearer ${token}`,
   };
 
+  // For PATCH, Firestore REST API requires document 'name' in the body matching the path
+  if (method === 'PATCH' && body && !body.name) {
+    body.name = `projects/${PROJECT_ID}/databases/(default)/documents/${path}`;
+  }
+
   if (body) {
     headers['Content-Type'] = 'application/json';
   }
