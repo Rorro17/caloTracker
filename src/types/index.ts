@@ -15,6 +15,10 @@ export interface UserProfile {
   activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active';
   goal: 'lose_fat' | 'maintain' | 'gain_muscle';
   createdAt: string;
+  neatType?: 'sedentary' | 'light' | 'active' | 'very_active';
+  workoutFrequency?: number;
+  workoutIntensity?: 'light' | 'moderate' | 'intense';
+  activityMultiplier?: number;
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';

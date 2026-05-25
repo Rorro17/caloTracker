@@ -12,8 +12,12 @@ export default function SettingsPage() {
   const [height, setHeight] = useState(user?.height || 175);
   const [weight, setWeight] = useState(user?.weight || 70);
   const [sex, setSex] = useState<'male' | 'female'>('male'); // For MSJ equation
-  const [activityLevel, setActivityLevel] = useState(user?.activityLevel || 'sedentary');
   const [goal, setGoal] = useState(user?.goal || 'maintain');
+  
+  // Advanced Activity Calculator states
+  const [neatType, setNeatType] = useState<'sedentary' | 'light' | 'active' | 'very_active'>(user?.neatType || 'sedentary');
+  const [workoutFrequency, setWorkoutFrequency] = useState<number>(user?.workoutFrequency ?? 3);
+  const [workoutIntensity, setWorkoutIntensity] = useState<'light' | 'moderate' | 'intense'>(user?.workoutIntensity || 'moderate');
 
   // Nutritional goals state
   const [calorieGoal, setCalorieGoal] = useState(user?.calorieGoal || 2000);
@@ -29,12 +33,14 @@ export default function SettingsPage() {
       setAge(user.age);
       setHeight(user.height);
       setWeight(user.weight);
-      setActivityLevel(user.activityLevel);
       setGoal(user.goal);
       setCalorieGoal(user.calorieGoal);
       setProteinGoal(user.proteinGoal);
       setCarbsGoal(user.carbsGoal);
       setFatGoal(user.fatGoal);
+      setNeatType(user.neatType || 'sedentary');
+      setWorkoutFrequency(user.workoutFrequency ?? (user.activityLevel === 'sedentary' ? 0 : user.activityLevel === 'lightly_active' ? 3 : 5));
+      setWorkoutIntensity(user.workoutIntensity || 'moderate');
     }
   }, [user]);
 
@@ -46,15 +52,24 @@ export default function SettingsPage() {
     const baseBMR = 10 * weight + 6.25 * height - 5 * age;
     const bmr = sex === 'male' ? baseBMR + 5 : baseBMR - 161;
 
-    // Activity multiplier
-    const activityMultipliers: Record<string, number> = {
-      sedentary: 1.2,
-      lightly_active: 1.375,
-      moderately_active: 1.55,
-      very_active: 1.725,
+    // Advanced Activity Multiplier calculation
+    const neatBases: Record<string, number> = {
+      sedentary: 1.15,
+      light: 1.25,
+      active: 1.35,
+      very_active: 1.50,
     };
-    const multiplier = activityMultipliers[activityLevel] || 1.2;
-    const tdee = bmr * multiplier;
+    const baseMultiplier = neatBases[neatType] || 1.15;
+
+    const intensityFactors: Record<string, number> = {
+      light: 0.025,
+      moderate: 0.05,
+      intense: 0.075,
+    };
+    const intensityFactor = intensityFactors[workoutIntensity] || 0.05;
+
+    const calculatedMultiplier = baseMultiplier + (workoutFrequency * intensityFactor);
+    const tdee = bmr * calculatedMultiplier;
 
     // Goal adjustment
     let targetCalories = Math.round(tdee);
@@ -78,24 +93,50 @@ export default function SettingsPage() {
     setCarbsGoal(calculatedCarbs);
     setFatGoal(calculatedFat);
 
-    toast.success('¡Objetivos calculados basados en tus métricas!');
+    toast.success(`¡Objetivos calculados! Multiplicador estimado: ${calculatedMultiplier.toFixed(3)}`);
   };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
 
+    const neatBases: Record<string, number> = {
+      sedentary: 1.15,
+      light: 1.25,
+      active: 1.35,
+      very_active: 1.50,
+    };
+    const baseMultiplier = neatBases[neatType] || 1.15;
+
+    const intensityFactors: Record<string, number> = {
+      light: 0.025,
+      moderate: 0.05,
+      intense: 0.075,
+    };
+    const intensityFactor = intensityFactors[workoutIntensity] || 0.05;
+    const computedMultiplier = baseMultiplier + (workoutFrequency * intensityFactor);
+
+    // Compute standard level matching the computed multiplier
+    let computedLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' = 'sedentary';
+    if (computedMultiplier >= 1.7) computedLevel = 'very_active';
+    else if (computedMultiplier >= 1.5) computedLevel = 'moderately_active';
+    else if (computedMultiplier >= 1.3) computedLevel = 'lightly_active';
+
     try {
       await updateUserProfile({
         age,
         height,
         weight,
-        activityLevel: activityLevel as any,
+        activityLevel: computedLevel,
         goal: goal as any,
         calorieGoal,
         proteinGoal,
         carbsGoal,
         fatGoal,
+        neatType,
+        workoutFrequency,
+        workoutIntensity,
+        activityMultiplier: parseFloat(computedMultiplier.toFixed(3)),
       });
     } catch (err) {
       console.error(err);
@@ -248,17 +289,47 @@ export default function SettingsPage() {
 
             <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
-                Actividad Física
+                Actividad Diaria (Ocupación / NEAT)
               </label>
               <select
-                value={activityLevel}
-                onChange={(e) => setActivityLevel(e.target.value as any)}
+                value={neatType}
+                onChange={(e) => setNeatType(e.target.value as any)}
                 className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-white"
               >
-                <option value="sedentary">Sedentario (Poco ejercicio)</option>
-                <option value="lightly_active">Ligero (1-3 días/semana)</option>
-                <option value="moderately_active">Moderado (3-5 días/semana)</option>
-                <option value="very_active">Intenso (6-7 días/semana)</option>
+                <option value="sedentary">Sedentario (Oficina, sentado la mayor parte del día)</option>
+                <option value="light">Ligero (Maestro, cajero, de pie parte del día)</option>
+                <option value="active">Activo (Mesero, cartero, movimiento constante)</option>
+                <option value="very_active">Muy Activo (Construcción, esfuerzo físico pesado)</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                <span>Días de Entrenamiento</span>
+                <span className="text-primary-500 font-extrabold text-[11px]">{workoutFrequency} {workoutFrequency === 1 ? 'día' : 'días'} / semana</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="7"
+                value={workoutFrequency}
+                onChange={(e) => setWorkoutFrequency(parseInt(e.target.value, 10))}
+                className="w-full accent-primary-500 cursor-pointer h-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg appearance-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                Intensidad del Ejercicio
+              </label>
+              <select
+                value={workoutIntensity}
+                onChange={(e) => setWorkoutIntensity(e.target.value as any)}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-white"
+              >
+                <option value="light">Suave (Caminar, Yoga, Estiramientos)</option>
+                <option value="moderate">Moderado (Fuerza tradicional, Musculación, Ciclismo)</option>
+                <option value="intense">Intenso (CrossFit, HIIT, Running intenso, Deportes rápidos)</option>
               </select>
             </div>
 
