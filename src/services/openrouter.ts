@@ -33,13 +33,13 @@ INSTRUCCIONES DE ESTIMACIÓN DE PORCIONES:
   * Dulce de leche / Mermelada = 1 cucharada sopera de 25g (80 kcal, 1.5g P, 0g G, 20g C)
   * Porción de torta rellena/cobertura dulce (ej. dulce de leche, crema) = 100g (350 kcal, 5g P, 15g G, 50g C)
   * Porción de bizcochuelo/torta simple sin relleno = 60g (200 kcal, 3g P, 5g G, 35g C)
-- Ajusta proporcionalmente las cantidades si la descripción provee pistas claras (ej. "plato grande", "porción doble").
+- ¡IMPORTANTE! Las porciones de la tabla son únicamente de REFERENCIA. Debes ajustar proporcionalmente los gramos y los macronutrientes al tamaño o descripción real de la porción. No copies literalmente los valores de la tabla de referencia si la porción es visiblemente diferente (ej. si indica media porción o un pedazo chico, multiplica los macros de referencia por 0.5).
 - Para alimentos dulces, pastelería y postres, ten en cuenta su altísima densidad calórica y estima con cuidado el peso y sus ingredientes.
 - Calcula las calorías totales multiplicando estrictamente: Calorías = (proteína * 4) + (carbohidratos * 4) + (grasa * 9).
 
 FORMATO DE RESPUESTA:
 Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente estas llaves:
-- "analysis": Explicación detallada en español identificando cada alimento, estimando su peso en gramos y calculando los macros individuales de forma analítica antes de sumarlos.
+- "analysis": Explicación detallada en español identificando cada alimento, estimando su peso en gramos, indicando la escala o proporción aplicada a la referencia, y calculando los macros individuales de forma analítica antes de sumarlos.
 - "name": Nombre conciso del plato en español.
 - "calories": Entero redondeado (calculado estrictamente con la fórmula 4-4-9).
 - "protein": Gramos de proteína (número).
@@ -48,12 +48,12 @@ Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente 
 
 Ejemplo de respuesta esperada:
 {
-  "analysis": "Se identifica 1 plátano mediano (~120g, 105 kcal, 1.3g P, 27g C, 0.3g G) y 1 cucharada de mantequilla de maní (~16g, 95 kcal, 4g P, 3g C, 8g G). Sumando todo: Proteínas: 5.3g, Carbos: 30g, Grasas: 8.3g. Calorías = 5.3*4 + 30*4 + 8.3*9 = 21.2 + 120 + 74.7 = 215.9 kcal.",
-  "name": "Plátano con mantequilla de maní",
-  "calories": 216,
-  "protein": 5.3,
-  "carbs": 30,
-  "fat": 8.3
+  "analysis": "Se describe media porción de torta con dulce de leche. Aplicamos un factor de escala de 0.5 a la referencia estándar de 100g (estimando 50g): Proteínas: 5g * 0.5 = 2.5g, Carbohidratos: 50g * 0.5 = 25g, Grasas: 15g * 0.5 = 7.5g. Calorías = 2.5*4 + 25*4 + 7.5*9 = 10 + 100 + 67.5 = 177.5 kcal.",
+  "name": "Porción pequeña de torta con dulce de leche",
+  "calories": 178,
+  "protein": 2.5,
+  "carbs": 25,
+  "fat": 7.5
 }`;
 
   // Se realiza la petición con temperature: 0.0 para garantizar consistencia y determinismo en el análisis
@@ -133,13 +133,14 @@ INSTRUCCIONES DE ESTIMACIÓN DE PORCIONES Y ESCALA:
   * Dulce de leche / Mermelada = 1 cucharada sopera de 25g (80 kcal, 1.5g P, 0g G, 20g C)
   * Porción de torta rellena/cobertura dulce (ej. dulce de leche, crema) = 100g (350 kcal, 5g P, 15g G, 50g C)
   * Porción de bizcochuelo/torta simple sin relleno = 60g (200 kcal, 3g P, 5g G, 35g C)
+- ¡IMPORTANTE! Las porciones de la tabla son únicamente de REFERENCIA. Debes ajustar proporcionalmente los gramos y los macronutrientes al tamaño real observado en la imagen. No copies literalmente los valores de la tabla de referencia si el tamaño del plato o porción no coincide (ej. si el pedazo es la mitad de la porción estándar de 100g, multiplica los macros por 0.5).
 - Presta especial atención al aceite o aderezos visibles en la imagen que añaden grasa ("calorías invisibles").
 - Para alimentos dulces, repostería, pastelería y dulces (tales como bizcochuelos con dulce de leche, crema, chocolate), considera que su densidad calórica es muy elevada. Estima con cuidado el grosor de las capas de relleno (dulce de leche, crema, chocolate, etc.) y calcula el peso basándote en la escala visual.
 - Calcula las calorías totales multiplicando estrictamente: Calorías = (proteína * 4) + (carbohidratos * 4) + (grasa * 9).
 
 FORMATO DE RESPUESTA:
 Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente estas llaves:
-- "analysis": Explicación detallada en español identificando cada alimento de la imagen, estimando su peso en gramos y calculando los macros individuales de forma analítica antes de sumarlos.
+- "analysis": Explicación detallada en español identificando cada alimento de la imagen, estimando su peso en gramos, explicando la escala aplicada a los valores de referencia y calculando los macros individuales de forma analítica antes de sumarlos.
 - "name": Nombre conciso del plato en español.
 - "calories": Entero redondeado (calculado estrictamente con la fórmula 4-4-9).
 - "protein": Gramos de proteína (número).
@@ -148,12 +149,12 @@ Debes responder ÚNICAMENTE con un objeto JSON válido que contenga exactamente 
 
 Ejemplo de respuesta esperada:
 {
-  "analysis": "Se observa un filete de pechuga de pollo asado de tamaño mediano (aprox. 150g, 31g P, 3g G), una porción moderada de arroz (aprox. 150g, 4g P, 42g C, 0.5g G) y ensalada verde de lechuga y tomate sin aderezos calóricos (aprox. 100g, 15 kcal, 1g P, 3g C). Sumando todo: Proteínas: 36g, Carbos: 45g, Grasas: 3.5g. Calorías = 36*4 + 45*4 + 3.5*9 = 144 + 180 + 31.5 = 355.5 kcal.",
-  "name": "Pechuga de pollo con arroz y ensalada",
-  "calories": 356,
-  "protein": 36,
-  "carbs": 45,
-  "fat": 3.5
+  "analysis": "Se observa un trozo pequeño de tarta con dulce de leche. Comparado con la hoja del cuchillo (~12cm de largo), estimamos que el trozo mide unos 6cm y pesa aproximadamente 50g (la mitad de la referencia estándar de 100g). Por ende, multiplicamos los macros de referencia por 0.5: Proteínas: 5g * 0.5 = 2.5g, Carbohidratos: 50g * 0.5 = 25g, Grasas: 15g * 0.5 = 7.5g. Calorías = 2.5*4 + 25*4 + 7.5*9 = 10 + 100 + 67.5 = 177.5 kcal.",
+  "name": "Porción pequeña de tarta con dulce de leche",
+  "calories": 178,
+  "protein": 2.5,
+  "carbs": 25,
+  "fat": 7.5
 }`;
 
   // Se realiza la petición con temperature: 0.0 para garantizar consistencia y determinismo en el análisis
