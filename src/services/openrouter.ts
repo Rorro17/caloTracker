@@ -30,7 +30,11 @@ INSTRUCCIONES DE ESTIMACIÓN DE PORCIONES:
   * Cucharada de aceite (girasol/oliva) = 10g (90 kcal, 0g P, 10g G, 0g C)
   * Banana mediana = 120g (105 kcal, 1.3g P, 0.3g G, 27g C)
   * Aguacate/Palta mediana = 150g (240 kcal, 3g P, 22g G, 12g C)
+  * Dulce de leche / Mermelada = 1 cucharada sopera de 25g (80 kcal, 1.5g P, 0g G, 20g C)
+  * Porción de torta rellena/cobertura dulce (ej. dulce de leche, crema) = 100g (350 kcal, 5g P, 15g G, 50g C)
+  * Porción de bizcochuelo/torta simple sin relleno = 60g (200 kcal, 3g P, 5g G, 35g C)
 - Ajusta proporcionalmente las cantidades si la descripción provee pistas claras (ej. "plato grande", "porción doble").
+- Para alimentos dulces, pastelería y postres, ten en cuenta su altísima densidad calórica y estima con cuidado el peso y sus ingredientes.
 - Calcula las calorías totales multiplicando estrictamente: Calorías = (proteína * 4) + (carbohidratos * 4) + (grasa * 9).
 
 FORMATO DE RESPUESTA:
@@ -52,6 +56,7 @@ Ejemplo de respuesta esperada:
   "fat": 8.3
 }`;
 
+  // Se realiza la petición con temperature: 0.0 para garantizar consistencia y determinismo en el análisis
   const response = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -68,7 +73,8 @@ Ejemplo de respuesta esperada:
           content: prompt
         }
       ],
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
+      temperature: 0.0
     })
   });
 
@@ -115,6 +121,7 @@ ${description ? `Información o descripción adicional provista por el usuario: 
 
 INSTRUCCIONES DE ESTIMACIÓN DE PORCIONES Y ESCALA:
 - Identifica los alimentos en la imagen. Usa como referencia visual de escala los cubiertos, vasos, manos o asume que se sirve en un plato llano de tamaño estándar de 24 cm de diámetro.
+- La hoja de un cuchillo de mesa estándar tiene un ancho de aprox. 1.5 a 2 cm y la parte metálica mide unos 10 a 12 cm de largo. Utiliza esto para calcular los centímetros, volumen tridimensional del alimento y estimar su peso real en gramos (por ejemplo, un pedazo pequeño de bizcochuelo/tarta al lado de un cuchillo puede pesar unos 50-60 gramos, no 100 gramos).
 - Si el tamaño del plato o porción no está claro, usa estas referencias estándar:
   * Pechuga de pollo cocida = 150g (165 kcal, 31g P, 3g G, 0g C)
   * Bife de carne vacuna cocida = 150g (250 kcal, 35g P, 12g G, 0g C)
@@ -123,7 +130,11 @@ INSTRUCCIONES DE ESTIMACIÓN DE PORCIONES Y ESCALA:
   * Rebanada de pan de molde = 30g (80 kcal, 3g P, 1g G, 15g C)
   * Cucharada de aceite (girasol/oliva) = 10g (90 kcal, 0g P, 10g G, 0g C)
   * Papa/Patata cocida mediana = 150g (130 kcal, 3g P, 0.2g G, 30g C)
+  * Dulce de leche / Mermelada = 1 cucharada sopera de 25g (80 kcal, 1.5g P, 0g G, 20g C)
+  * Porción de torta rellena/cobertura dulce (ej. dulce de leche, crema) = 100g (350 kcal, 5g P, 15g G, 50g C)
+  * Porción de bizcochuelo/torta simple sin relleno = 60g (200 kcal, 3g P, 5g G, 35g C)
 - Presta especial atención al aceite o aderezos visibles en la imagen que añaden grasa ("calorías invisibles").
+- Para alimentos dulces, repostería, pastelería y dulces (tales como bizcochuelos con dulce de leche, crema, chocolate), considera que su densidad calórica es muy elevada. Estima con cuidado el grosor de las capas de relleno (dulce de leche, crema, chocolate, etc.) y calcula el peso basándote en la escala visual.
 - Calcula las calorías totales multiplicando estrictamente: Calorías = (proteína * 4) + (carbohidratos * 4) + (grasa * 9).
 
 FORMATO DE RESPUESTA:
@@ -145,6 +156,7 @@ Ejemplo de respuesta esperada:
   "fat": 3.5
 }`;
 
+  // Se realiza la petición con temperature: 0.0 para garantizar consistencia y determinismo en el análisis
   const response = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
@@ -172,7 +184,8 @@ Ejemplo de respuesta esperada:
           ]
         }
       ],
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
+      temperature: 0.0
     })
   });
 
