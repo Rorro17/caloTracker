@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [age, setAge] = useState(user?.age || 30);
   const [height, setHeight] = useState(user?.height || 175);
   const [weight, setWeight] = useState(user?.weight || 70);
+  const [targetWeight, setTargetWeight] = useState(user?.targetWeight || user?.weight || 70);
   const [sex, setSex] = useState<'male' | 'female'>('male'); // For MSJ equation
   const [goal, setGoal] = useState(user?.goal || 'maintain');
   
@@ -72,6 +73,7 @@ export default function SettingsPage() {
       setAge(user.age);
       setHeight(user.height);
       setWeight(user.weight);
+      setTargetWeight(user.targetWeight || user.weight || 70);
       setSex(user.sex || 'male');
       setGoal(user.goal);
       setCalorieGoal(user.calorieGoal);
@@ -167,6 +169,7 @@ export default function SettingsPage() {
         age,
         height,
         weight,
+        targetWeight,
         sex,
         activityLevel: computedLevel,
         goal: goal as any,
@@ -315,6 +318,20 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                Peso Objetivo (kg)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                required
+                value={targetWeight}
+                onChange={(e) => setTargetWeight(Math.max(1, parseFloat(e.target.value)))}
+                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-white"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 col-span-2">
               <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                 Sexo Biológico
               </label>

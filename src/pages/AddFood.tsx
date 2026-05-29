@@ -24,12 +24,13 @@ const getTodayString = () => {
 
 export default function AddFood() {
   const navigate = useNavigate();
-  const { addFoodEntry, customFoods, addCustomFood } = useStore();
+  const { addFoodEntry, customFoods, addCustomFood, foodLog } = useStore();
 
   // AI analysis text & photo states
   const [aiText, setAiText] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState('');
 
   // Form states
   const [name, setName] = useState('');
@@ -107,6 +108,7 @@ export default function AddFood() {
       return;
     }
 
+    setAiAnalysis('');
     setAnalyzing(true);
     const toastId = toast.loading(
       imagePreview 
@@ -129,6 +131,7 @@ export default function AddFood() {
       setProtein(result.protein);
       setCarbs(result.carbs);
       setFat(result.fat);
+      setAiAnalysis(result.analysis || '');
       
       // Smart meal selection based on current time
       const hour = new Date().getHours();
@@ -202,6 +205,35 @@ export default function AddFood() {
     setShowCustomDrawer(false);
     toast.success(`Cargado: ${food.name}`);
   };
+
+  // Calculate top 5 most frequently eaten foods based on user logs
+  const frequentFoods = (() => {
+    if (!foodLog || foodLog.length === 0) return [];
+    
+    const counts: Record<string, { count: number; food: any }> = {};
+    foodLog.forEach((entry) => {
+      if (!entry.name) return;
+      const key = `${entry.name.toLowerCase().trim()}_${entry.calories}_${entry.protein}_${entry.carbs}_${entry.fat}`;
+      if (!counts[key]) {
+        counts[key] = {
+          count: 0,
+          food: {
+            name: entry.name,
+            calories: entry.calories,
+            protein: entry.protein,
+            carbs: entry.carbs,
+            fat: entry.fat,
+          }
+        };
+      }
+      counts[key].count += 1;
+    });
+    
+    return Object.values(counts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5)
+      .map(x => x.food);
+  })();
 
   const filteredCustomFoods = customFoods.filter((f) =>
     f.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -326,6 +358,21 @@ export default function AddFood() {
         </button>
       </div>
 
+      {/* AI Explanation reasoning */}
+      {aiAnalysis && (
+        <div className="bg-indigo-50/40 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-950/30 p-4.5 rounded-3xl flex flex-col gap-2 animate-fade-in shadow-sm">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-primary-500 animate-pulse" />
+            <h4 className="text-[10px] font-bold text-indigo-500 dark:text-primary-400 uppercase tracking-wider">
+              Análisis y Cálculo de la IA
+            </h4>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed italic">
+            "{aiAnalysis}"
+          </p>
+        </div>
+      )}
+
       {/* Manual Entry Form */}
       <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex flex-col gap-4">
         <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider">
@@ -346,6 +393,34 @@ export default function AddFood() {
             className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-white"
           />
         </div>
+
+        {/* Suggested frequent foods quick selection */}
+        {frequentFoods.length > 0 && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Sugeridos Frecuentes
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {frequentFoods.map((food, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    setName(food.name);
+                    setCalories(food.calories);
+                    setProtein(food.protein);
+                    setCarbs(food.carbs);
+                    setFat(food.fat);
+                    toast.success(`Cargado: ${food.name}`);
+                  }}
+                  className="px-3 py-1.5 rounded-full border border-slate-100 hover:border-indigo-300 dark:border-slate-800/80 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 text-[11px] font-medium text-slate-650 dark:text-slate-350 transition-all duration-150 tap-effect"
+                >
+                  {food.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Meal Type selection */}
         <div className="flex flex-col gap-1.5">

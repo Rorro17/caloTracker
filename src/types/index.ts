@@ -16,6 +16,7 @@ export interface UserProfile {
   activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active';
   goal: 'lose_fat' | 'maintain' | 'gain_muscle';
   createdAt: string;
+  targetWeight?: number; // Weight goal in kg
   neatType?: 'sedentary' | 'light' | 'active' | 'very_active';
   workoutFrequency?: number;
   workoutIntensity?: 'light' | 'moderate' | 'intense';

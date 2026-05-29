@@ -237,6 +237,72 @@ export default function Progress() {
         </button>
       </form>
 
+      {/* Weight Goal Progress Card */}
+      {user?.targetWeight && (
+        (() => {
+          const sortedWeights = [...weightLog].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          const initialWeight = sortedWeights.length > 0 ? sortedWeights[0].weight : user.weight || 70;
+          const currentW = sortedWeights.length > 0 ? sortedWeights[sortedWeights.length - 1].weight : user.weight || 70;
+          const targetW = user.targetWeight;
+          
+          const totalToChange = initialWeight - targetW;
+          const totalAchieved = initialWeight - currentW;
+          
+          let progressPercent = 0;
+          if (totalToChange !== 0) {
+            progressPercent = Math.min(100, Math.max(0, Math.round((totalAchieved / totalToChange) * 100)));
+          } else {
+            progressPercent = currentW === targetW ? 100 : 0;
+          }
+          
+          const weightDiff = Math.abs(currentW - targetW).toFixed(1);
+          const hasReachedGoal = currentW === targetW || 
+            (user.goal === 'lose_fat' && currentW <= targetW) || 
+            (user.goal === 'gain_muscle' && currentW >= targetW);
+          
+          return (
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm flex flex-col gap-3.5">
+              <div className="flex gap-3.5 items-start">
+                <Target className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+                <div className="flex flex-col gap-1 w-full text-slate-800 dark:text-slate-100">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    Objetivo de Peso Corporal
+                  </h3>
+                  
+                  <div className="flex justify-between items-baseline mt-1">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      Meta: <span className="text-indigo-500 font-extrabold">{targetW} kg</span>
+                    </span>
+                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {hasReachedGoal ? (
+                        <span className="text-emerald-500 font-bold">¡Meta alcanzada! 🎉</span>
+                      ) : (
+                        <span>Faltan <strong className="text-slate-800 dark:text-white">{weightDiff} kg</strong></span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    <div className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-0.5">
+                      <span>Inicio: {initialWeight} kg</span>
+                      <span>{progressPercent}% completado</span>
+                      <span>Actual: {currentW} kg</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()
+      )}
+
       {/* Impact & Projection Cards */}
       <div className="grid grid-cols-1 gap-3.5">
         

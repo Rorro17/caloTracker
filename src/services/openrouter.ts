@@ -9,6 +9,7 @@ export interface AIAnalysisResult {
   protein: number;
   carbs: number;
   fat: number;
+  analysis?: string;
 }
 
 export async function analyzeFoodDescription(description: string): Promise<AIAnalysisResult> {
@@ -100,6 +101,7 @@ Ejemplo de respuesta esperada:
       protein: Math.max(0, parseFloat(String(result.protein ?? result.proteina ?? result.proteinas ?? result.proteínas ?? 0))),
       carbs: Math.max(0, parseFloat(String(result.carbs ?? result.carbohidratos ?? result.hidratos ?? 0))),
       fat: Math.max(0, parseFloat(String(result.fat ?? result.grasa ?? result.grasas ?? 0))),
+      analysis: String(result.analysis ?? result.analisis ?? result.análisis ?? ''),
     };
   } catch (e) {
     console.error('Error parsing AI response:', textContent, e);
@@ -212,6 +214,7 @@ Ejemplo de respuesta esperada:
       protein: Math.max(0, parseFloat(String(result.protein ?? result.proteina ?? result.proteinas ?? result.proteínas ?? 0))),
       carbs: Math.max(0, parseFloat(String(result.carbs ?? result.carbohidratos ?? result.hidratos ?? 0))),
       fat: Math.max(0, parseFloat(String(result.fat ?? result.grasa ?? result.grasas ?? 0))),
+      analysis: String(result.analysis ?? result.analisis ?? result.análisis ?? ''),
     };
   } catch (e) {
     console.error('Error parsing AI response:', textContent, e);
